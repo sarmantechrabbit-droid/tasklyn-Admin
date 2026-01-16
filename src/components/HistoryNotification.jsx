@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import Header from "./Header";
+
+const PAGE_SIZE = 10;
 
 export default function HistoryNotification() {
   const [data, setData] = useState([]);
@@ -10,14 +12,15 @@ export default function HistoryNotification() {
   const [filter, setFilter] = useState("All");
   const [stats, setStats] = useState(null);
 
-  // 🔥 Fetch data from backend
+  // ✅ Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get(
           "http://192.168.1.18:5000/api/admin/notifications"
         );
-
         setData(res.data || []);
         setStats(res.data?.counts || null);
       } catch (error) {
@@ -26,11 +29,10 @@ export default function HistoryNotification() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  // 🔍 Search by USER NAME + Filter by SUBSCRIPTION
+  // 🔍 Filter + Search
   const filteredData = data.filter((item) => {
     const userName = (item.userId?.name || "").toLowerCase();
     const subscription = (item.userId?.subscription || "").toLowerCase();
@@ -42,6 +44,14 @@ export default function HistoryNotification() {
     return matchSearch && matchFilter;
   });
 
+  // ✅ Pagination logic
+  const totalEntries = filteredData.length;
+  const totalPages = Math.ceil(totalEntries / PAGE_SIZE);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const endIndex = startIndex + PAGE_SIZE;
+
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
   return (
     <div className="flex-1 px-6 py-5 bg-[#F7F7F7]">
       <Header
@@ -49,7 +59,6 @@ export default function HistoryNotification() {
         subtitle="Manage and analyze your customer relationships"
       />
 
-      {/* TABLE */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4">
@@ -58,22 +67,26 @@ export default function HistoryNotification() {
           </h2>
 
           <div className="flex gap-3">
-            {/* Search */}
             <div className="flex items-center gap-2 px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white">
               <Search size={16} className="text-[#6B7280]" />
               <input
                 type="text"
                 placeholder="Search by name"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="outline-none text-sm w-36"
               />
             </div>
 
-            {/* Filter */}
             <select
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setCurrentPage(1);
+              }}
               className="px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm outline-none bg-white"
             >
               <option value="All">All</option>
@@ -92,10 +105,10 @@ export default function HistoryNotification() {
           </div>
         )}
 
-        {/* Table Wrapper */}
+        {/* Table */}
         <div className="m-2.5 border border-[#F0F0F0] rounded-xl px-4 py-3">
           <table className="w-full text-sm">
-            <thead className="border-b border-[#F0F0F0] text-[#141414]">
+            <thead className="border-b border-[#F0F0F0]">
               <tr>
                 <th className="px-5 py-3 text-left">Customer ID</th>
                 <th className="px-5 py-3 text-left">Customer Name</th>
@@ -113,41 +126,30 @@ export default function HistoryNotification() {
                     Loading...
                   </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="py-6 text-center">
                     No data found
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item) => (
+                paginatedData.map((item) => (
                   <tr key={item._id}>
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {item._id}
-                    </td>
-
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                    <td className="px-5 py-4 border-b">{item._id}</td>
+                    <td className="px-5 py-4 border-b">
                       <div className="flex items-center gap-2">
                         <img
                           src={`https://ui-avatars.com/api/?name=${
                             item.userId?.name || "User"
                           }`}
-                          alt={item.userId?.name || "User"}
                           className="w-6 h-6 rounded-full"
                         />
                         {item.userId?.name || "Unknown User"}
                       </div>
                     </td>
-
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {item.recipient}
-                    </td>
-
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {item.sentAt}
-                    </td>
-
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                    <td className="px-5 py-4 border-b">{item.recipient}</td>
+                    <td className="px-5 py-4 border-b">{item.sentAt}</td>
+                    <td className="px-5 py-4 border-b">
                       <span
                         className={`px-3 py-1 rounded-full text-xs ${
                           item.userId?.subscription?.toLowerCase() === "paid"
@@ -158,10 +160,7 @@ export default function HistoryNotification() {
                         {item.userId?.subscription || "Unknown"}
                       </span>
                     </td>
-
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {item.count}
-                    </td>
+                    <td className="px-5 py-4 border-b">{item.count}</td>
                   </tr>
                 ))
               )}
@@ -169,9 +168,34 @@ export default function HistoryNotification() {
           </table>
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-between px-5 py-4 text-sm text-[#6B7280]">
-          <span>{filteredData.length} Entries</span>
+        {/* ✅ Pagination Footer (MATCH IMAGE) */}
+        <div className="flex items-center justify-between px-5 py-4">
+          <span className="text-sm text-[#6B7280]">
+            {startIndex + 1} – {Math.min(endIndex, totalEntries)} of{" "}
+            {totalEntries} Entries
+          </span>
+
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
+              1 – 10 <ChevronDown size={16} />
+            </button>
+
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="p-2 border rounded-lg disabled:opacity-40"
+            >
+              ←
+            </button>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -181,12 +205,8 @@ export default function HistoryNotification() {
 function StatCard({ title, value }) {
   return (
     <div className="bg-white h-[100px] border border-[#E5E7EB] rounded-2xl p-5">
-      <p className="text-[#141414] font-[Geist] text-[16px] font-medium leading-[24px]">
-        {title}
-      </p>
-      <p className="text-[#141414] font-[Geist] text-[32px] font-semibold leading-[40px] tracking-[-0.32px]">
-        + {value}
-      </p>
+      <p className="text-[#141414] text-[16px] font-medium">{title}</p>
+      <p className="text-[#141414] text-[32px] font-semibold">+ {value}</p>
     </div>
   );
 }

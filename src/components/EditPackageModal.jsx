@@ -7,14 +7,10 @@ export default function EditPackageModal() {
   const navigate = useNavigate();
   const { state } = useLocation();
 
-  // ✅ full plan object
   const plan = state?.plan;
 
-  // ✅ redirect safely
   useEffect(() => {
-    if (!plan) {
-      navigate("/subscription");
-    }
+    if (!plan) navigate("/subscription");
   }, [plan, navigate]);
 
   if (!plan) return null;
@@ -30,7 +26,6 @@ export default function EditPackageModal() {
     discountedPrice: "",
   });
 
-  // ✅ prefill data
   useEffect(() => {
     setFormData({
       packageName: plan.packageName || "",
@@ -39,11 +34,15 @@ export default function EditPackageModal() {
       discountedPrice: plan.discountedPrice || "",
     });
 
-    setFeatures(plan.features || []);
+    setFeatures(plan.features?.length ? plan.features : [""]);
   }, [plan]);
 
   const handleAddFeature = () => {
     setFeatures([...features, ""]);
+  };
+
+  const handleRemoveFeature = (index) => {
+    setFeatures(features.filter((_, i) => i !== index));
   };
 
   const handleFeatureChange = (index, value) => {
@@ -59,7 +58,6 @@ export default function EditPackageModal() {
     });
   };
 
-  // ✅ SAVE → UPDATE BACKEND
   const handleSave = async () => {
     try {
       const payload = {
@@ -80,109 +78,70 @@ export default function EditPackageModal() {
 
       navigate("/subscription");
     } catch (error) {
-      console.error(
-        "UPDATE ERROR:",
-        error.response?.data || error.message
-      );
+      console.error("UPDATE ERROR:", error.response?.data || error.message);
       alert("Failed to update package");
     }
   };
 
-  const handleCancel = () => {
-    navigate("/subscription");
-  };
+  const handleCancel = () => navigate("/subscription");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={handleCancel}
       ></div>
 
-      {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-8 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex w-full items-center justify-between mb-6 border-b border-[#E8EAED] pb-[25px]">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Edit Package
-          </h2>
-          <button
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600"
-          >
+        <div className="flex items-center justify-between mb-6 border-b pb-6">
+          <h2 className="text-2xl font-bold">Edit Package</h2>
+          <button onClick={handleCancel}>
             <X size={24} />
           </button>
         </div>
 
-        {/* Form */}
         <div className="space-y-5">
-          {/* Package Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Package Name
-            </label>
-            <input
-              type="text"
-              name="packageName"
-              value={formData.packageName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2.5 border rounded-lg"
-            />
-          </div>
+          <input
+            name="packageName"
+            value={formData.packageName}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2.5 border rounded-lg"
+            placeholder="Package Name"
+          />
 
-          {/* Short Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Short Description
-            </label>
-            <input
-              type="text"
-              name="shortDescription"
-              value={formData.shortDescription}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2.5 border rounded-lg"
-            />
-          </div>
+          <input
+            name="shortDescription"
+            value={formData.shortDescription}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2.5 border rounded-lg"
+            placeholder="Short Description"
+          />
 
-          {/* PRO PRICE */}
           {isProPlan && (
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Actual Price
-                </label>
-                <input
-                  type="text"
-                  name="actualPrice"
-                  value={formData.actualPrice}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Discounted Price
-                </label>
-                <input
-                  type="text"
-                  name="discountedPrice"
-                  value={formData.discountedPrice}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border rounded-lg"
-                />
-              </div>
+              <input
+                name="actualPrice"
+                value={formData.actualPrice}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2.5 border rounded-lg"
+                placeholder="Actual Price"
+              />
+              <input
+                name="discountedPrice"
+                value={formData.discountedPrice}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2.5 border rounded-lg"
+                placeholder="Discounted Price"
+              />
             </div>
           )}
 
-          {/* Features */}
+          {/* FEATURES */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Features
-              </label>
+              <label className="text-sm font-medium">Features</label>
               <button
+                type="button"
                 onClick={handleAddFeature}
                 className="text-teal-600 text-sm flex items-center gap-1"
               >
@@ -191,30 +150,40 @@ export default function EditPackageModal() {
             </div>
 
             {features.map((feature, index) => (
-              <input
-                key={index}
-                type="text"
-                value={feature}
-                onChange={(e) =>
-                  handleFeatureChange(index, e.target.value)
-                }
-                className="w-full px-4 py-2.5 border rounded-lg mb-3"
-              />
+              <div key={index} className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={feature}
+                  onChange={(e) =>
+                    handleFeatureChange(index, e.target.value)
+                  }
+                  className="flex-1 px-4 py-2.5 border rounded-lg"
+                />
+
+                {features.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFeature(index)}
+                    className="px-3 border rounded-lg text-red-500 hover:bg-red-50"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-3 mt-8">
           <button
             onClick={handleCancel}
-            className="flex-1 px-6 py-3 border-2 border-red-500 text-red-500 rounded-lg"
+            className="flex-1 border-2 border-red-500 text-red-500 rounded-lg py-3"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg"
+            className="flex-1 bg-teal-600 text-white rounded-lg py-3"
           >
             Save
           </button>
