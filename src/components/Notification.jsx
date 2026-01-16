@@ -15,11 +15,7 @@ export default function Notification() {
   const [subscriptionType, setSubscriptionType] = useState(null);
   const [disabledIndexes, setDisabledIndexes] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // ✅ PAGINATION STATE
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [searchTerm, setSearchTerm] = useState(""); // ✅ ADDED
 
   const toggleDisable = (index) => {
     setDisabledIndexes((prev) =>
@@ -38,11 +34,6 @@ export default function Notification() {
     };
     getUsers();
   }, []);
-
-  // ✅ RESET PAGE ON SEARCH / FILTER CHANGE
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedFilter]);
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
@@ -82,7 +73,7 @@ export default function Notification() {
     }
   };
 
-  // ✅ FILTER + SEARCH
+  // ✅ FILTER + SEARCH LOGIC (FIXED)
   const filteredUsers = users.filter((user) => {
     if (selectedFilter !== "all" && user.subscription !== selectedFilter) {
       return false;
@@ -97,17 +88,9 @@ export default function Notification() {
         user.subscription?.toLowerCase().includes(search)
       );
     }
+
     return true;
   });
-
-  // ✅ PAGINATION LOGIC
-  const totalEntries = filteredUsers.length;
-  const totalPages = Math.ceil(totalEntries / itemsPerPage);
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   return (
     <main className="flex-1 p-6 overflow-y-auto bg-[#F8F8F8]">
@@ -233,12 +216,10 @@ export default function Notification() {
             </thead>
 
             <tbody>
-              {paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => (
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                   <tr key={user._id}>
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {user._id}
-                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">{user._id}</td>
                     <td className="px-5 py-4 border-b border-[#F0F0F0]">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
@@ -251,17 +232,13 @@ export default function Notification() {
                         {user.name}
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {user.email}
-                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">{user.email}</td>
                     <td className="px-5 py-4 border-b border-[#F0F0F0]">
                       <span className="px-3 py-1 rounded-full text-xs bg-[#F2F4F7]">
                         {user.subscription}
                       </span>
                     </td>
-                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      Free
-                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">Free</td>
                     <td className="px-5 py-4 border-b border-[#F0F0F0] text-right">
                       <button className="bg-[#187D4F] p-2 rounded-lg">
                         <img
@@ -284,42 +261,60 @@ export default function Notification() {
           </table>
         </div>
 
-        {/* ✅ PAGINATION */}
-        <div className="flex items-center justify-between px-5 py-4">
-          <span className="text-sm text-[#6B7280]">
-            {totalEntries === 0
-              ? "0 Entries"
-              : `${startIndex + 1} – ${Math.min(
-                  endIndex,
-                  totalEntries
-                )} of ${totalEntries} Entries`}
-          </span>
-
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
-              1 – 10 <ChevronDown size={16} />
-            </button>
-
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              className="p-2 border rounded-lg disabled:opacity-40"
-            >
-              ←
-            </button>
-
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((p) => Math.min(p + 1, totalPages))
-              }
-              className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
-            >
-              Next →
-            </button>
-          </div>
+        <div className="flex justify-between px-5 py-4 text-sm text-[#6B7280]">
+          <span>{filteredUsers.length} Entries</span>
         </div>
       </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.8)" }}
+        >
+          <div className="bg-white p-6 rounded-lg w-[756px] relative">
+            <button onClick={closeModal} className="absolute top-4 right-4 p-2">
+              ✕
+            </button>
+
+            <h2 className="text-xl font-semibold mb-4">Notifications</h2>
+
+            <label className="block text-sm font-medium mb-2">
+              Notifications Title
+            </label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-lg mb-4"
+              value={notificationTitle}
+              onChange={(e) => setNotificationTitle(e.target.value)}
+            />
+
+            <label className="block text-sm font-medium mb-2">
+              Description
+            </label>
+            <textarea
+              className="w-full p-2 border rounded-lg mb-4"
+              value={notificationDescription}
+              onChange={(e) =>
+                setNotificationDescription(e.target.value)
+              }
+            />
+
+            <button
+              onClick={() =>
+                subscriptionType
+                  ? handleSubcriptionNotificationSubmit()
+                  : handleNotificationSubmit()
+              }
+              className="w-full bg-[#187D4F] text-white py-2 rounded-lg"
+            >
+              Notifications Message
+            </button>
+            
+          </div>
+          
+        </div>
+      )}
     </main>
   );
 }
