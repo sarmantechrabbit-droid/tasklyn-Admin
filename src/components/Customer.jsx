@@ -1,32 +1,37 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  Search,
-  Filter,
-  Bell,
-  ChevronDown,
-} from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import Header from "./Header";
+
+/* Pagination constant */
+const ITEMS_PER_PAGE = 10;
 
 export default function Customer() {
   const [customers, setCustomers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ NEW STATES
+  // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [subscriptionFilter, setSubscriptionFilter] = useState("all");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     getCustomers();
   }, []);
+
+  // Reset page on search/filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, subscriptionFilter]);
 
   const getCustomers = async () => {
     try {
       const res = await axios.get(
         "http://192.168.1.18:5000/api/user"
       );
-
       setCustomers(res.data.users || []);
       setStats(res.data.counts || null);
     } catch (error) {
@@ -37,7 +42,7 @@ export default function Customer() {
     }
   };
 
-  // ✅ FILTER LOGIC
+  /* FILTER */
   const filteredCustomers = customers.filter((c) => {
     const matchName = c.name
       ?.toLowerCase()
@@ -50,42 +55,25 @@ export default function Customer() {
     return matchName && matchSubscription;
   });
 
+  /* PAGINATION */
+  const totalPages = Math.ceil(
+    filteredCustomers.length / ITEMS_PER_PAGE
+  );
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+
+  const paginatedCustomers = filteredCustomers.slice(
+    startIndex,
+    endIndex
+  );
+
   return (
     <main className="flex-1 p-6 bg-[#F8F8F8]">
-      {/* Header */}
-           <Header
+      <Header
         title="Customer"
         subtitle="Manage and analyze your customer relationships"
       />
-      {/* <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-[20px] font-semibold text-[#141414]">
-            Customer
-          </h1>
-          <p className="text-sm text-[#6B7280]">
-            Manage and analyze your customer relationships
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Search className="w-5 h-5 text-[#6B7280]" />
-          <Bell className="w-5 h-5 text-[#6B7280]" />
-
-          <div className="flex items-center gap-2">
-            <img
-              src="https://i.pravatar.cc/40?10"
-              className="w-8 h-8 rounded-full"
-            />
-            <div className="text-sm">
-              <p className="font-medium">Jacob Farrel</p>
-              <p className="text-xs text-[#6B7280]">
-                jacobfarrel@gmail.com
-              </p>
-            </div>
-            <ChevronDown size={16} />
-          </div>
-        </div>
-      </div> */}
 
       {/* Stats */}
       {stats && (
@@ -101,9 +89,8 @@ export default function Customer() {
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="font-semibold">Customer List</h2>
 
-          {/* ✅ SEARCH + FILTER */}
+          {/* Search & Filter */}
           <div className="flex gap-3">
-            {/* Search */}
             <div className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
               <Search size={16} />
               <input
@@ -115,7 +102,6 @@ export default function Customer() {
               />
             </div>
 
-            {/* Filter */}
             <select
               value={subscriptionFilter}
               onChange={(e) =>
@@ -132,14 +118,16 @@ export default function Customer() {
 
         <div className="m-2.5 border rounded-xl border-[#F0F0F0] px-4 py-3">
           <table className="w-full text-sm">
-            <thead className="border-b border-[#F0F0F0] text-[#141414]">
+            <thead className="border-b border-[#F0F0F0]">
               <tr>
                 <th className="px-5 py-3 text-left">Customer ID</th>
                 <th className="px-5 py-3 text-left">Date</th>
                 <th className="px-5 py-3 text-left">Customer Name</th>
                 <th className="px-5 py-3 text-left">Contact</th>
                 <th className="px-5 py-3 text-left">Subscription</th>
-                <th className="px-5 py-3 text-left">Subscription Day</th>
+                <th className="px-5 py-3 text-left">
+                  Subscription Day
+                </th>
               </tr>
             </thead>
 
@@ -150,14 +138,14 @@ export default function Customer() {
                     Loading customers...
                   </td>
                 </tr>
-              ) : filteredCustomers.length === 0 ? (
+              ) : paginatedCustomers.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="py-6 text-center">
                     No customers found
                   </td>
                 </tr>
               ) : (
-                filteredCustomers.map((c) => (
+                paginatedCustomers.map((c) => (
                   <tr key={c._id}>
                     <td className="px-5 py-4 border-b">{c._id}</td>
                     <td className="px-5 py-4 border-b">
@@ -166,15 +154,16 @@ export default function Customer() {
                     <td className="px-5 py-4 border-b">
                       <div className="flex items-center gap-2">
                         <img
-                          src={c.avatar}
+                          src={
+                            c.avatar ||
+                            `https://ui-avatars.com/api/?name=${c.name}`
+                          }
                           className="w-6 h-6 rounded-full"
                         />
                         {c.name}
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-b">
-                      {c.email}
-                    </td>
+                    <td className="px-5 py-4 border-b">{c.email}</td>
                     <td className="px-5 py-4 border-b">
                       <span
                         className={`px-3 py-1 rounded-full text-xs ${
@@ -196,22 +185,54 @@ export default function Customer() {
           </table>
         </div>
 
-        <div className="flex justify-between px-5 py-4 text-sm text-[#6B7280]">
-          <span>{filteredCustomers.length} Entries</span>
+        {/* Pagination (Image Style) */}
+        <div className="flex justify-end px-5 py-4">
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-[#E5E7EB]">
+            {/* Range */}
+            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
+              {startIndex + 1} –{" "}
+              {Math.min(endIndex, filteredCustomers.length)}
+              <ChevronDown size={16} />
+            </button>
+
+            {/* Prev */}
+            <button
+              onClick={() =>
+                setCurrentPage((p) => Math.max(p - 1, 1))
+              }
+              disabled={currentPage === 1}
+              className="p-2 border rounded-lg disabled:opacity-40"
+            >
+              ←
+            </button>
+
+            {/* Next */}
+            <button
+              onClick={() =>
+                setCurrentPage((p) =>
+                  Math.min(p + 1, totalPages)
+                )
+              }
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
     </main>
   );
 }
 
-/* Reusable Stat Card */
+/* Stat Card */
 function StatCard({ title, value }) {
   return (
     <div className="bg-white h-[100px] border border-[#E5E7EB] rounded-2xl p-5">
-      <p className="text-[#141414] font-[Geist] text-[16px] font-medium leading-[24px]">
+      <p className="text-[#141414] text-[16px] font-medium">
         {title}
       </p>
-      <p className="text-[#141414] font-[Geist] text-[32px] font-semibold leading-[40px] tracking-[-0.32px]">
+      <p className="text-[#141414] text-[32px] font-semibold">
         + {value}
       </p>
     </div>

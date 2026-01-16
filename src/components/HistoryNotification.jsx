@@ -8,6 +8,7 @@ export default function HistoryNotification() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [stats, setStats] = useState(null);
 
   // 🔥 Fetch data from backend
   useEffect(() => {
@@ -16,7 +17,9 @@ export default function HistoryNotification() {
         const res = await axios.get(
           "http://192.168.1.18:5000/api/admin/notifications"
         );
-        setData(res.data);
+
+        setData(res.data || []);
+        setStats(res.data?.counts || null);
       } catch (error) {
         console.error("Failed to fetch data", error);
       } finally {
@@ -27,14 +30,14 @@ export default function HistoryNotification() {
     fetchData();
   }, []);
 
-  // 🔍 Search by NAME + Filter by SUBSCRIPTION
+  // 🔍 Search by USER NAME + Filter by SUBSCRIPTION
   const filteredData = data.filter((item) => {
-    const name = (item.name || "").toLowerCase();
-    const plan = (item.plan || "").toLowerCase();
+    const userName = (item.userId?.name || "").toLowerCase();
+    const subscription = (item.userId?.subscription || "").toLowerCase();
 
-    const matchSearch = name.includes(search.toLowerCase());
+    const matchSearch = userName.includes(search.toLowerCase());
     const matchFilter =
-      filter === "All" || plan === filter.toLowerCase();
+      filter === "All" || subscription === filter.toLowerCase();
 
     return matchSearch && matchFilter;
   });
@@ -48,7 +51,6 @@ export default function HistoryNotification() {
 
       {/* TABLE */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB]">
-
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="text-[16px] font-semibold text-[#141414]">
@@ -81,6 +83,15 @@ export default function HistoryNotification() {
           </div>
         </div>
 
+        {/* Stats */}
+        {stats && (
+          <div className="grid grid-cols-3 gap-4 mb-6 mt-8 px-5">
+            <StatCard title="Total Customer" value={stats.all} />
+            <StatCard title="Free Customer" value={stats.free} />
+            <StatCard title="Paid Customer" value={stats.paid} />
+          </div>
+        )}
+
         {/* Table Wrapper */}
         <div className="m-2.5 border border-[#F0F0F0] rounded-xl px-4 py-3">
           <table className="w-full text-sm">
@@ -89,13 +100,9 @@ export default function HistoryNotification() {
                 <th className="px-5 py-3 text-left">Customer ID</th>
                 <th className="px-5 py-3 text-left">Customer Name</th>
                 <th className="px-5 py-3 text-left">Contact</th>
-                <th className="px-5 py-3 text-left">
-                  Last Notification
-                </th>
+                <th className="px-5 py-3 text-left">Last Notification</th>
                 <th className="px-5 py-3 text-left">Subscription</th>
-                <th className="px-5 py-3 text-left">
-                  Notification No.
-                </th>
+                <th className="px-5 py-3 text-left">Notification No.</th>
               </tr>
             </thead>
 
@@ -122,31 +129,33 @@ export default function HistoryNotification() {
                     <td className="px-5 py-4 border-b border-[#F0F0F0]">
                       <div className="flex items-center gap-2">
                         <img
-                          src={item.avatar}
-                          alt={item.name}
-                          className="w-6 h-6 bg-[#ECFDF3] rounded-full"
+                          src={`https://ui-avatars.com/api/?name=${
+                            item.userId?.name || "User"
+                          }`}
+                          alt={item.userId?.name || "User"}
+                          className="w-6 h-6 rounded-full"
                         />
-                        {item.name}
+                        {item.userId?.name || "Unknown User"}
                       </div>
                     </td>
 
                     <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {item.email}
+                      {item.recipient}
                     </td>
 
                     <td className="px-5 py-4 border-b border-[#F0F0F0]">
-                      {item.last}
+                      {item.sentAt}
                     </td>
 
                     <td className="px-5 py-4 border-b border-[#F0F0F0]">
                       <span
                         className={`px-3 py-1 rounded-full text-xs ${
-                          item.plan === "Paid"
+                          item.userId?.subscription?.toLowerCase() === "paid"
                             ? "bg-[#ECFDF3] text-[#027A48]"
                             : "bg-[#F2F4F7] text-[#344054]"
                         }`}
                       >
-                        {item.plan}
+                        {item.userId?.subscription || "Unknown"}
                       </span>
                     </td>
 
@@ -165,6 +174,19 @@ export default function HistoryNotification() {
           <span>{filteredData.length} Entries</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value }) {
+  return (
+    <div className="bg-white h-[100px] border border-[#E5E7EB] rounded-2xl p-5">
+      <p className="text-[#141414] font-[Geist] text-[16px] font-medium leading-[24px]">
+        {title}
+      </p>
+      <p className="text-[#141414] font-[Geist] text-[32px] font-semibold leading-[40px] tracking-[-0.32px]">
+        + {value}
+      </p>
     </div>
   );
 }
