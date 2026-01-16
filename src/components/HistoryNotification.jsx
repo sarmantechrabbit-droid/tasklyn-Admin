@@ -7,32 +7,35 @@ const PAGE_SIZE = 10;
 
 export default function HistoryNotification() {
   const [data, setData] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [stats, setStats] = useState(null);
 
-  // ✅ Pagination state
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ✅ FETCH DATA (FIXED)
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get(
           "http://192.168.1.18:5000/api/admin/notifications"
         );
-        setData(res.data || []);
-        setStats(res.data?.counts || null);
+
+        setData(res.data.notifications || []);
+        setStats(res.data.counts || null);
       } catch (error) {
         console.error("Failed to fetch data", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
-  // 🔍 Filter + Search
+  // 🔍 SEARCH + FILTER
   const filteredData = data.filter((item) => {
     const userName = (item.userId?.name || "").toLowerCase();
     const subscription = (item.userId?.subscription || "").toLowerCase();
@@ -44,9 +47,10 @@ export default function HistoryNotification() {
     return matchSearch && matchFilter;
   });
 
-  // ✅ Pagination logic
+  // ✅ PAGINATION
   const totalEntries = filteredData.length;
   const totalPages = Math.ceil(totalEntries / PAGE_SIZE);
+
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
 
@@ -58,15 +62,24 @@ export default function HistoryNotification() {
         title="History Notification"
         subtitle="Manage and analyze your customer relationships"
       />
+        {/* STATS */}
+        {stats && (
+          <div className="grid grid-cols-3 gap-4 mb-6 mt-8 px-5">
+            <StatCard title="Total Customer" value={stats.total} />
+            <StatCard title="Free Customer" value={stats.free} />
+            <StatCard title="Paid Customer" value={stats.paid} />
+          </div>
+        )}
 
       <div className="bg-white rounded-2xl border border-[#E5E7EB]">
-        {/* Header */}
+        {/* HEADER */}
         <div className="flex items-center justify-between px-5 py-4">
           <h2 className="text-[16px] font-semibold text-[#141414]">
             Customer List
           </h2>
 
           <div className="flex gap-3">
+            {/* SEARCH */}
             <div className="flex items-center gap-2 px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white">
               <Search size={16} className="text-[#6B7280]" />
               <input
@@ -81,6 +94,7 @@ export default function HistoryNotification() {
               />
             </div>
 
+            {/* FILTER */}
             <select
               value={filter}
               onChange={(e) => {
@@ -96,16 +110,9 @@ export default function HistoryNotification() {
           </div>
         </div>
 
-        {/* Stats */}
-        {stats && (
-          <div className="grid grid-cols-3 gap-4 mb-6 mt-8 px-5">
-            <StatCard title="Total Customer" value={stats.all} />
-            <StatCard title="Free Customer" value={stats.free} />
-            <StatCard title="Paid Customer" value={stats.paid} />
-          </div>
-        )}
+      
 
-        {/* Table */}
+        {/* TABLE */}
         <div className="m-2.5 border border-[#F0F0F0] rounded-xl px-4 py-3">
           <table className="w-full text-sm">
             <thead className="border-b border-[#F0F0F0]">
@@ -135,7 +142,10 @@ export default function HistoryNotification() {
               ) : (
                 paginatedData.map((item) => (
                   <tr key={item._id}>
-                    <td className="px-5 py-4 border-b">{item._id}</td>
+                    <td className="px-5 py-4 border-b">
+                      {item._id}
+                    </td>
+
                     <td className="px-5 py-4 border-b">
                       <div className="flex items-center gap-2">
                         <img
@@ -147,8 +157,15 @@ export default function HistoryNotification() {
                         {item.userId?.name || "Unknown User"}
                       </div>
                     </td>
-                    <td className="px-5 py-4 border-b">{item.recipient}</td>
-                    <td className="px-5 py-4 border-b">{item.sentAt}</td>
+
+                    <td className="px-5 py-4 border-b">
+                      {item.recipient}
+                    </td>
+
+                    <td className="px-5 py-4 border-b">
+                      {new Date(item.sentAt).toLocaleString()}
+                    </td>
+
                     <td className="px-5 py-4 border-b">
                       <span
                         className={`px-3 py-1 rounded-full text-xs ${
@@ -160,7 +177,10 @@ export default function HistoryNotification() {
                         {item.userId?.subscription || "Unknown"}
                       </span>
                     </td>
-                    <td className="px-5 py-4 border-b">{item.count}</td>
+
+                    <td className="px-5 py-4 border-b">
+                      {item.count ?? "-"}
+                    </td>
                   </tr>
                 ))
               )}
@@ -168,11 +188,15 @@ export default function HistoryNotification() {
           </table>
         </div>
 
-        {/* ✅ Pagination Footer (MATCH IMAGE) */}
+        {/* ✅ PAGINATION (EXACT DESIGN) */}
         <div className="flex items-center justify-between px-5 py-4">
           <span className="text-sm text-[#6B7280]">
-            {startIndex + 1} – {Math.min(endIndex, totalEntries)} of{" "}
-            {totalEntries} Entries
+            {totalEntries === 0
+              ? "0 Entries"
+              : `${startIndex + 1} – ${Math.min(
+                  endIndex,
+                  totalEntries
+                )} of ${totalEntries} Entries`}
           </span>
 
           <div className="flex items-center gap-3">
@@ -182,7 +206,9 @@ export default function HistoryNotification() {
 
             <button
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
+              onClick={() =>
+                setCurrentPage((p) => Math.max(p - 1, 1))
+              }
               className="p-2 border rounded-lg disabled:opacity-40"
             >
               ←
@@ -190,7 +216,11 @@ export default function HistoryNotification() {
 
             <button
               disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
+              onClick={() =>
+                setCurrentPage((p) =>
+                  Math.min(p + 1, totalPages)
+                )
+              }
               className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
             >
               Next →
@@ -202,11 +232,16 @@ export default function HistoryNotification() {
   );
 }
 
+/* STAT CARD */
 function StatCard({ title, value }) {
   return (
     <div className="bg-white h-[100px] border border-[#E5E7EB] rounded-2xl p-5">
-      <p className="text-[#141414] text-[16px] font-medium">{title}</p>
-      <p className="text-[#141414] text-[32px] font-semibold">+ {value}</p>
+      <p className="text-[#141414] text-[16px] font-medium">
+        {title}
+      </p>
+      <p className="text-[#141414] text-[32px] font-semibold">
+        + {value}
+      </p>
     </div>
   );
 }

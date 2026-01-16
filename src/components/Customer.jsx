@@ -187,7 +187,7 @@ export default function Customer() {
 
         {/* Pagination (Image Style) */}
         <div className="flex justify-end px-5 py-4">
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-[#E5E7EB]">
+          <div className="flex items-center gap-3 bg-white px-4 py-2">
             {/* Range */}
             <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
               {startIndex + 1} –{" "}

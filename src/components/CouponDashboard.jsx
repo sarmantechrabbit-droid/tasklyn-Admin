@@ -132,103 +132,98 @@ export default function CouponDashboard() {
             </div>
 
             {/* TABLE */}
-            <div className="border-1 border-[#F0F0F0] rounded-[10px] m-[16px]">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3">No.</th>
-                      <th className="px-6 py-3">Coupon Name</th>
-                      <th className="px-6 py-3">Max Uses Per User</th>
-                      <th className="px-6 py-3">Max Total Users Use</th>
-                      <th className="px-6 py-3">Discount Value</th>
-                      <th className="px-6 py-3">Expire Date</th>
-                    </tr>
-                  </thead>
+          <div className="border-1 border-[#F0F0F0] rounded-[10px] m-[16px]">
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead className="border-b border-gray-200 text-center">
+        <tr>
+          <th className="px-6 py-3">No.</th>
+          <th className="px-6 py-3">Coupon Name</th>
+          <th className="px-6 py-3">Max Uses Per User</th>
+          <th className="px-6 py-3">Max Total Users Use</th>
+          <th className="px-6 py-3">Discount Value</th>
+          <th className="px-6 py-3">Expire Date</th>
+        </tr>
+      </thead>
 
-                  <tbody className="divide-y divide-gray-200">
-                    {loading ? (
-                      <tr>
-                        <td colSpan="6" className="text-center py-6">
-                          Loading...
-                        </td>
-                      </tr>
-                    ) : paginatedCoupons.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="text-center py-6">
-                          No data found
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedCoupons.map((coupon, index) => (
-                        <tr key={coupon._id}>
-                          <td className="px-6 py-4">
-                            {startIndex + index + 1}
-                          </td>
-                          <td className="px-6 py-4">
-                            {coupon.name}
-                          </td>
-                          <td className="px-6 py-4">
-                            {coupon.maxUsesPerUser ?? "-"}
-                          </td>
-                          <td className="px-6 py-4">
-                            {coupon.maxTotalUses ?? "-"}
-                          </td>
-                          <td className="px-6 py-4">
-                            {coupon.discountValue}%
-                          </td>
-                          <td className="px-6 py-4">
-                            {new Date(
-                              coupon.expiresAt
-                            ).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+      <tbody className="divide-y divide-gray-200 text-center align-middle">
+        {loading ? (
+          <tr>
+            <td colSpan="6" className="py-6">
+              Loading...
+            </td>
+          </tr>
+        ) : paginatedCoupons.length === 0 ? (
+          <tr>
+            <td colSpan="6" className="py-6">
+              No data found
+            </td>
+          </tr>
+        ) : (
+          paginatedCoupons.map((coupon, index) => (
+            <tr key={coupon._id}>
+              <td className="px-6 py-4">
+                {startIndex + index + 1}
+              </td>
+              <td className="px-6 py-4">
+                {coupon.name}
+              </td>
+              <td className="px-6 py-4">
+                {coupon.maxUsesPerUser ?? "-"}
+              </td>
+              <td className="px-6 py-4">
+                {coupon.maxTotalUses ?? "-"}
+              </td>
+              <td className="px-6 py-4">
+                {coupon.discountValue}%
+              </td>
+              <td className="px-6 py-4">
+                {new Date(coupon.expiresAt).toLocaleDateString()}
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
 
-              {/* PAGINATION */}
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <p className="text-sm text-[#667085]">
-                  <span className="text-[#101828] font-medium">
-                    {startIndex + 1} –{" "}
-                    {Math.min(
-                      startIndex + itemsPerPage,
-                      filteredCoupons.length
-                    )}
-                  </span>{" "}
-                  of {filteredCoupons.length} Entries
-                </p>
+  {/* PAGINATION */}
+  <div className="px-6 py-4 flex items-center justify-between">
+    <p className="text-sm text-[#667085]">
+      <span className="text-[#101828] font-medium">
+        {startIndex + 1} –{" "}
+        {Math.min(
+          startIndex + itemsPerPage,
+          filteredCoupons.length
+        )}
+      </span>{" "}
+      of {filteredCoupons.length} Entries
+    </p>
 
-                <div className="flex items-center gap-3">
-                  <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
-                    1 - 4 <ChevronDown size={16} />
-                  </button>
+    <div className="flex items-center gap-3">
+      <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
+        1 - 4 <ChevronDown size={16} />
+      </button>
 
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() =>
-                      setCurrentPage((p) => p - 1)
-                    }
-                    className="p-2 border rounded-lg disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
+      <button
+        disabled={currentPage === 1}
+        onClick={() => setCurrentPage((p) => p - 1)}
+        className="p-2 border rounded-lg disabled:opacity-50"
+      >
+        <ChevronLeft size={18} />
+      </button>
 
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() =>
-                      setCurrentPage((p) => p + 1)
-                    }
-                    className="flex items-center gap-2 px-4 py-2 border rounded-lg disabled:opacity-50"
-                  >
-                    Next <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
+      <button
+        disabled={currentPage === totalPages}
+        onClick={() => setCurrentPage((p) => p + 1)}
+        className="flex items-center gap-2 px-4 py-2 border rounded-lg disabled:opacity-50"
+      >
+        Next <ChevronRight size={18} />
+      </button>
+    </div>
+  </div>
+</div>
+
           </div>
         </div>
       </div>
