@@ -1,15 +1,118 @@
-import { Search, Bell, ChevronDown, Filter, MoreVertical } from "lucide-react";
-import Header from "./Header";
+import React, { useEffect, useState } from "react";
+import { fetchCustomers } from "../api/customer.api";
+import {
+  sendNotification,
+  sendNotificationBySubcription,
+} from "../api/notification.api";
+import { Search, Bell, ChevronDown, MoreVertical } from "lucide-react";
+import Logos from "../assets/Button.png";
 
 export default function Notification() {
+  const [users, setUsers] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState("");
+  const [notificationDescription, setNotificationDescription] = useState("");
+  const [subscriptionType, setSubscriptionType] = useState(null);
+  const [disabledIndexes, setDisabledIndexes] = useState([]);
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // ✅ PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const toggleDisable = (index) => {
+    setDisabledIndexes((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
+  };
+
+  useEffect(() => {
+    const getUsers = async () => {
+      try {
+        const data = await fetchCustomers();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    getUsers();
+  }, []);
+
+  // ✅ RESET PAGE ON SEARCH / FILTER CHANGE
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedFilter]);
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSubscriptionType(null);
+  };
+
+  const handleNotificationSubmit = async () => {
+    try {
+      const payload = {
+        userId: users.map((user) => user._id),
+        title: notificationTitle,
+        text: notificationDescription,
+      };
+      await sendNotification(payload);
+      setNotificationTitle("");
+      setNotificationDescription("");
+      closeModal();
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
+  };
+
+  const handleSubcriptionNotificationSubmit = async () => {
+    try {
+      const payload = {
+        subscriptionType,
+        title: notificationTitle,
+        text: notificationDescription,
+      };
+      await sendNotificationBySubcription(payload);
+      setNotificationTitle("");
+      setNotificationDescription("");
+      closeModal();
+    } catch (error) {
+      console.error("Error sending subscription notification:", error);
+    }
+  };
+
+  // ✅ FILTER + SEARCH
+  const filteredUsers = users.filter((user) => {
+    if (selectedFilter !== "all" && user.subscription !== selectedFilter) {
+      return false;
+    }
+
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      return (
+        user.name?.toLowerCase().includes(search) ||
+        user.email?.toLowerCase().includes(search) ||
+        user._id?.toLowerCase().includes(search) ||
+        user.subscription?.toLowerCase().includes(search)
+      );
+    }
+    return true;
+  });
+
+  // ✅ PAGINATION LOGIC
+  const totalEntries = filteredUsers.length;
+  const totalPages = Math.ceil(totalEntries / itemsPerPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
   return (
     <main className="flex-1 p-6 overflow-y-auto bg-[#F8F8F8]">
       {/* Header */}
-           <Header
-             title="Customer"
-             subtitle="Manage and analyze your customer relationships"
-           />
-      {/* <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-xl font-semibold">Notifications</h1>
           <p className="text-sm text-gray-500">
@@ -20,7 +123,6 @@ export default function Notification() {
         <div className="flex items-center gap-4">
           <Search size={18} />
           <Bell size={18} />
-
           <div className="flex items-center gap-2">
             <img
               src="https://i.pravatar.cc/40"
@@ -33,7 +135,7 @@ export default function Notification() {
             <ChevronDown size={16} />
           </div>
         </div>
-      </div> */}
+      </div>
 
       {/* Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
@@ -43,22 +145,43 @@ export default function Notification() {
               <div className="flex justify-between items-center mb-4">
                 <p className="font-medium">{title}</p>
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-5 bg-emerald-600 rounded-full relative">
+                  <div
+                    className={`w-10 h-5 rounded-full relative cursor-pointer ${
+                      disabledIndexes.includes(i)
+                        ? "bg-black"
+                        : "bg-emerald-600"
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleDisable(i);
+                    }}
+                  >
                     <div className="w-4 h-4 bg-white rounded-full absolute right-1 top-0.5" />
                   </div>
                   <MoreVertical size={16} />
                 </div>
               </div>
+
               <div className="bg-white rounded-[12px] pt-[12px] pb-[8px] pl-[16px]">
-                <p className="text-[#141414] font-[Geist] text-[16px] font-medium leading-[24px]">
+                <p className="text-[#141414] font-medium text-[16px]">
                   Customer
                 </p>
-
-                <p className="text-[#141414] font-[Geist] text-[24px] font-semibold leading-[32px] tracking-[-0.24px]">
-                  +330
-                </p>
+                <p className="text-[#141414] text-[24px] font-semibold">+330</p>
               </div>
-              <button className="mt-4 w-full bg-[#187D4F] text-white py-2 rounded-[8px] text-sm">
+
+              <button
+                disabled={disabledIndexes.includes(i)}
+                onClick={() => {
+                  if (disabledIndexes.includes(i)) return;
+                  setSubscriptionType(title.toLowerCase());
+                  openModal();
+                }}
+                className={`mt-4 w-full py-2 rounded-[8px] text-sm ${
+                  disabledIndexes.includes(i)
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#187D4F] text-white"
+                }`}
+              >
                 Notifications Message
               </button>
             </div>
@@ -67,64 +190,133 @@ export default function Notification() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border">
-        <div className="flex justify-between items-center px-5 py-4">
+      <div className="bg-white rounded-2xl border border-[#E5E7EB]">
+        <div className="flex items-center justify-between px-5 py-4">
           <h2 className="font-semibold">Customer List</h2>
+
           <div className="flex gap-3">
-            <div className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-gray-500">
-              <Search size={16} /> Search...
+            <div className="flex items-center gap-2 px-3 py-2 border border-[#F0F0F0] rounded-lg text-sm">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-[186px] outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
-              <Filter size={16} /> Filter
-            </button>
+
+            <select
+              className="px-3 py-2 border border-[#F0F0F0] rounded-lg text-sm outline-none"
+              value={selectedFilter}
+              onChange={(e) => setSelectedFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="free">Free</option>
+              <option value="paid">Paid</option>
+            </select>
           </div>
         </div>
 
-        <table className="w-full text-sm">
-          <thead className="border-b">
-            <tr>
-              {[
-                "Customer ID",
-                "Date",
-                "Customer Name",
-                "Contact",
-                "Subscription",
-                "Subscription Day",
-              ].map((h) => (
-                <th key={h} className="px-5 py-3 text-left font-medium">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <tr key={i}>
-                <td className="px-5 py-4 border-b">CUST-0{i}</td>
-                <td className="px-5 py-4 border-b">25-12-2025</td>
-                <td className="px-5 py-4 border-b">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={`https://i.pravatar.cc/32?img=${i}`}
-                      className="w-6 h-6 rounded-full"
-                    />
-                    Dennis Lau
-                  </div>
-                </td>
-                <td className="px-5 py-4 border-b">dennislau@gmail.com</td>
-                <td className="px-5 py-4 border-b">Free</td>
-                <td className="px-5 py-4 border-b">Free</td>
+        <div className="m-2.5 border rounded-xl border-[#F0F0F0] px-4 py-3">
+          <table className="w-full text-sm">
+            <thead className="border-b border-[#F0F0F0]">
+              <tr>
+                <th className="px-5 py-3 text-left">Customer ID</th>
+                <th className="px-5 py-3 text-left">Date</th>
+                <th className="px-5 py-3 text-left">Customer Name</th>
+                <th className="px-5 py-3 text-left">Contact</th>
+                <th className="px-5 py-3 text-left">Subscription</th>
+                <th className="px-5 py-3 text-left">Subscription Day</th>
+                <th className="px-5 py-3 text-right"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
 
-        <div className="flex justify-between items-center px-5 py-4 text-sm text-gray-500">
-          <span>1 – 10 of 1,676 Entries</span>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border rounded">Previous</button>
-            <button className="px-3 py-1 border rounded">Next</button>
+            <tbody>
+              {paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
+                  <tr key={user._id}>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                      {user._id}
+                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={user.avatar || "https://i.pravatar.cc/32"}
+                          className="w-6 h-6 rounded-full"
+                        />
+                        {user.name}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                      {user.email}
+                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                      <span className="px-3 py-1 rounded-full text-xs bg-[#F2F4F7]">
+                        {user.subscription}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0]">
+                      Free
+                    </td>
+                    <td className="px-5 py-4 border-b border-[#F0F0F0] text-right">
+                      <button className="bg-[#187D4F] p-2 rounded-lg">
+                        <img
+                          src={Logos}
+                          onClick={openModal}
+                          className="w-[30px]"
+                        />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center py-4">
+                    No customers found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ✅ PAGINATION */}
+        <div className="flex items-center justify-between px-5 py-4">
+          <span className="text-sm text-[#6B7280]">
+            {totalEntries === 0
+              ? "0 Entries"
+              : `${startIndex + 1} – ${Math.min(
+                  endIndex,
+                  totalEntries
+                )} of ${totalEntries} Entries`}
+          </span>
+
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
+              1 – 10 <ChevronDown size={16} />
+            </button>
+
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              className="p-2 border rounded-lg disabled:opacity-40"
+            >
+              ←
+            </button>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((p) => Math.min(p + 1, totalPages))
+              }
+              className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
+            >
+              Next →
+            </button>
           </div>
         </div>
       </div>

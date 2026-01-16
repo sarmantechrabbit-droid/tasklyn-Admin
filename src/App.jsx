@@ -7,19 +7,18 @@ import Subscription from "./components/Subscription";
 import EditPackageModal from "./components/EditPackageModal";
 import CouponDashboard from "./components/CouponDashboard";
 import CreateCouponModal from "./components/CreateCouponModal";
+import Login from '../src/pages/Login'; 
+import ProtectedRoute from './rooutes/ProtectedRoute';
 
-export default function App() {
+/* Dashboard Layout */
+function DashboardLayout() {
   return (
-    <BrowserRouter>
-      <div className="flex w-full">
-        <Sidebar />
+    <div className="flex w-full">
+      <Sidebar />
 
-        <div className="flex-1">
-          {/* <Header /> */}
-
-          <Routes>
-            {/* DEFAULT PAGE */}
-            <Route path="/" element={<Navigate to="/customer" replace />} />
+      <div className="flex-1">
+        <Routes>
+       <Route path="/" element={<Navigate to="/customer" replace />} />
 
             <Route path="/customer" element={<Customer />} />
             <Route path="/notification" element={<Notification />} />
@@ -28,9 +27,33 @@ export default function App() {
             <Route path="/editplan" element={<EditPackageModal />} />
             <Route path="/coupon" element={<CouponDashboard />} />
             <Route path="/createcoupon" element={<CreateCouponModal />} />
-          </Routes>
-        </div>
+
+        </Routes>
       </div>
+    </div>
+  );
+}
+
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* LOGIN */}
+        <Route path="/login" element={<Login />} />
+
+        {/* PROTECTED DASHBOARD */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        />
+              {/* FALLBACK */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     </BrowserRouter>
   );
 }
