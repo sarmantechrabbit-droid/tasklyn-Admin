@@ -33,11 +33,14 @@ export default function Subscription() {
 
   // identify plans using packageName
   const freePlan = plans.find(
-    (p) => p.packageName?.toLowerCase().includes("starter")
+    (p) => p.packageName?.toLowerCase().includes("basic")
   );
   const proPlan = plans.find(
     (p) => p.packageName?.toLowerCase().includes("pro")
   );
+
+
+  console.log("Pro Plan", plans)
 
   if (loading) {
     return (
