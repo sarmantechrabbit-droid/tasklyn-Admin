@@ -53,16 +53,20 @@ export default function CreateCouponModal() {
       newErrors.maxTotalUsers = "Must be greater than 0";
     }
 
-    // Discount Value
-    if (!couponForm.discountValue.trim()) {
-      newErrors.discountValue = "Discount value is required";
-    } else if (isNaN(couponForm.discountValue)) {
-      newErrors.discountValue = "Must be a number";
-    } else if (Number(couponForm.discountValue) <= 0) {
-      newErrors.discountValue = "Must be greater than 0";
-    } else if (Number(couponForm.discountValue) > 100) {
-      newErrors.discountValue = "Must not exceed 100%";
-    }
+   // Discount Value
+if (!couponForm.discountValue.trim()) {
+  newErrors.discountValue = "Discount value is required";
+} else {
+  const discount = Number(couponForm.discountValue);
+  if (isNaN(discount)) {
+    newErrors.discountValue = "Must be a number";
+  } else if (discount <= 0) {
+    newErrors.discountValue = "Must be greater than 0";
+  } else if (discount > 99) {
+    newErrors.discountValue = "Must not exceed 99%";
+  }
+}
+
 
     // Expire Date
     if (!couponForm.expireDate.trim()) newErrors.expireDate = "Expire date is required";
@@ -156,14 +160,15 @@ export default function CreateCouponModal() {
             placeholder="Enter Max Total Users Use"
           />
 
-          <InputField
-            label="Discount Value"
-            name="discountValue"
-            value={couponForm.discountValue}
-            onChange={handleInputChange}
-            error={errors.discountValue}
-            placeholder="Enter Discount Value (0-100)"
-          />
+    <InputField
+  label="Discount Value"
+  name="discountValue"
+  value={couponForm.discountValue}
+  onChange={handleInputChange}
+  error={errors.discountValue}
+  placeholder="Enter Discount Value (0-99)"
+/>
+
 
           <InputField
             label="Expire Date"
