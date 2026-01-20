@@ -20,7 +20,7 @@ export default function Header({ title, subtitle }) {
         {/* Right Section */}
         <div className="flex items-center gap-4">
           {/* Search */}
-          <div className="relative">
+          {/* <div className="relative">
             <div
               className="bg-white p-3 rounded-[12px] border border-[#E5E7EB] cursor-pointer"
               onClick={() => setSearchOpen(!searchOpen)}
@@ -37,10 +37,10 @@ export default function Header({ title, subtitle }) {
                 className="absolute top-12 right-0 w-60 px-3 py-2 border rounded-lg outline-none shadow-lg"
               />
             )}
-          </div>
+          </div> */}
 
           {/* Notifications */}
-          <div className="relative">
+          {/* <div className="relative">
             <div
               className="bg-white p-3 rounded-[12px] border border-[#E5E7EB] cursor-pointer"
               onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -52,7 +52,7 @@ export default function Header({ title, subtitle }) {
                 <p className="text-gray-500 text-sm">No new notifications</p>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Profile */}
           <div

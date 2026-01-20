@@ -96,18 +96,22 @@ export default function EditPackageModal() {
       newErrors.shortDescription = "Short description must not exceed 50 characters";
     }
 
-    // Actual Price
+    // Actual & Discounted Price Validation
     if (isProPlan) {
+      // Actual Price
       if (!formData.actualPrice.toString().trim()) {
         newErrors.actualPrice = "Actual price is required";
       } else if (isNaN(formData.actualPrice) || Number(formData.actualPrice) <= 0) {
         newErrors.actualPrice = "Must be a number greater than 0";
       }
 
+      // Discounted Price
       if (!formData.discountedPrice.toString().trim()) {
         newErrors.discountedPrice = "Discounted price is required";
       } else if (isNaN(formData.discountedPrice) || Number(formData.discountedPrice) <= 0) {
         newErrors.discountedPrice = "Must be a number greater than 0";
+      } else if (Number(formData.discountedPrice) >= Number(formData.actualPrice)) {
+        newErrors.discountedPrice = "Discounted price must be less than Actual Price";
       }
     }
 
@@ -156,18 +160,22 @@ export default function EditPackageModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={handleCancel}
       ></div>
 
+      {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-8 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6 border-b pb-6">
           <h2 className="text-2xl font-bold">Edit Package</h2>
           <button onClick={handleCancel}><X size={24} /></button>
         </div>
 
         <div className="space-y-5">
+          {/* Package Name */}
           <InputField
             label="Package Name"
             name="packageName"
@@ -177,6 +185,7 @@ export default function EditPackageModal() {
             placeholder="Package Name"
           />
 
+          {/* Short Description */}
           <InputField
             label="Short Description"
             name="shortDescription"
@@ -186,6 +195,7 @@ export default function EditPackageModal() {
             placeholder="Short Description"
           />
 
+          {/* Prices */}
           {isProPlan && (
             <div className="grid grid-cols-2 gap-4">
               <InputField
@@ -202,11 +212,12 @@ export default function EditPackageModal() {
                 value={formData.discountedPrice}
                 onChange={handleInputChange}
                 error={errors.discountedPrice}
-                placeholder="Discounted Price"
+                placeholder="Discounted Price (less than Actual Price)"
               />
             </div>
           )}
 
+          {/* Features */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">Features</label>
@@ -245,6 +256,7 @@ export default function EditPackageModal() {
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex gap-3 mt-8">
           <button
             onClick={handleCancel}

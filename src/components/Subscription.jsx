@@ -117,58 +117,67 @@ export default function Subscription() {
         )}
 
         {/* ================= PRO PLAN ================= */}
-        {proPlan && (
-          <div className="relative bg-[#0F1F1C] rounded-2xl border border-[#1F3D36] p-6 text-white">
-            <span className="absolute top-4 right-4 text-xs bg-[#1F3D36] px-3 py-1 rounded-full">
-              Most popular
-            </span>
+      {/* ================= PRO PLAN ================= */}
+{proPlan && (
+  <div className="relative bg-[#0F1F1C] rounded-2xl border border-[#1F3D36] p-6 text-white">
+    <span className="absolute top-4 right-4 text-xs bg-[#1F3D36] px-3 py-1 rounded-full">
+      Most popular
+    </span>
 
-            <div className="mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[#1F3D36] flex items-center justify-center mb-3">
-                <div className="m-auto">
-                  <img src={icon} alt="user" />
-                </div>
-              </div>
+    <div className="mb-4">
+      <div className="w-9 h-9 rounded-lg bg-[#1F3D36] flex items-center justify-center mb-3">
+        <div className="m-auto">
+          <img src={icon} alt="icon" />
+        </div>
+      </div>
 
-              <h3 className="font-semibold">{proPlan.packageName}</h3>
-              <p className="text-sm text-[#9CA3AF]">
-                {proPlan.shortDescription}
-              </p>
-            </div>
+      <h3 className="font-semibold">{proPlan.packageName}</h3>
+      <p className="text-sm text-[#9CA3AF]">{proPlan.shortDescription}</p>
+    </div>
 
-            <div className="border-1 rounded-t-[10px] border-[#4F5857] p-4">
-              <div className="bg-[#1A2F2A] rounded-t-[10px] p-4 mb-4 border-b border-[#4F5857]">
-                <h2 className="text-[28px] font-semibold text-[#34D399]">
-                  ${proPlan.actualPrice}
-                  <span className="text-sm font-normal text-[#9CA3AF]">
-                    /month
-                  </span>
-                </h2>
+    <div className="border-1 rounded-t-[10px] border-[#4F5857] p-4">
+      <div className="bg-[#1A2F2A] rounded-t-[10px] p-4 mb-4 border-b border-[#4F5857]">
+        <div className="flex items-baseline gap-2">
+          {/* Actual Price (strike-through) */}
+          <span className="text-[20px] text-gray-400 line-through">
+            ${proPlan.actualPrice}
+          </span>
 
-                <button
-                  onClick={() =>
-                    navigate("/editplan", { state: { plan: proPlan } })
-                  }
-                  className="mt-3 w-full bg-gradient-to-r from-[#2EB67D] to-[#1E9E6A] rounded-lg py-2 text-sm font-medium"
-                >
-                  Edit Package
-                </button>
-              </div>
+          {/* Discounted Price */}
+          <span className="text-[28px] font-semibold text-[#34D399]">
+            ${proPlan.discountedPrice}
+          </span>
 
-              <ul className="space-y-3 text-sm">
-                {proPlan.features?.map((item, index) => (
-                  <li
-                    key={index}
-                    className="flex items-center gap-2 border-b border-[#DCDEDE] border-dashed last:border-none"
-                  >
-                    <Check className="w-4 h-4 text-[#22C55E] border-1 rounded-full" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
+          <span className="text-sm font-normal text-[#9CA3AF]">
+            /month
+          </span>
+        </div>
+
+        <button
+          onClick={() =>
+            navigate("/editplan", { state: { plan: proPlan } })
+          }
+          className="mt-3 w-full bg-gradient-to-r from-[#2EB67D] to-[#1E9E6A] rounded-lg py-2 text-sm font-medium"
+        >
+          Edit Package
+        </button>
+      </div>
+
+      <ul className="space-y-3 text-sm">
+        {proPlan.features?.map((item, index) => (
+          <li
+            key={index}
+            className="flex items-center gap-2 border-b border-[#DCDEDE] border-dashed last:border-none"
+          >
+            <Check className="w-4 h-4 text-[#22C55E] border-1 rounded-full" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+)}
+
       </div>
     </div>
   );
