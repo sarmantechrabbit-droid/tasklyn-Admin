@@ -1,11 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import axios from "axios";
-import {
-  Search,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Search, ChevronDown, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 
@@ -26,14 +21,11 @@ export default function CouponDashboard() {
     const fetchCoupons = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(
-          "http://192.168.1.18:5000/api/coupons"
-        );
-
-        // API returns array directly
+        const res = await axios.get("http://192.168.1.18:5000/api/coupons");
         setCoupons(res.data || []);
       } catch (err) {
         console.error("Coupon API Error:", err);
+        alert("❌ Failed to fetch coupons");
       } finally {
         setLoading(false);
       }
@@ -41,6 +33,24 @@ export default function CouponDashboard() {
 
     fetchCoupons();
   }, []);
+
+  /* =======================
+     DELETE COUPON
+  ======================== */
+  const handleDeleteCoupon = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this coupon?")) return;
+
+    try {
+      await axios.delete(`http://192.168.1.18:5000/api/coupons/${id}`);
+      alert("✅ Coupon deleted successfully");
+
+      // Update the UI without refetching
+      setCoupons((prev) => prev.filter((c) => c._id !== id));
+    } catch (err) {
+      console.error("Delete error:", err.response?.data || err.message);
+      alert("❌ Failed to delete coupon");
+    }
+  };
 
   /* =======================
      SEARCH + FILTER
@@ -53,8 +63,7 @@ export default function CouponDashboard() {
 
       const matchDiscount =
         discountFilter === "all" ||
-        String(coupon.discountValue) ===
-          discountFilter.replace("%", "");
+        String(coupon.discountValue) === discountFilter.replace("%", "");
 
       return matchSearch && matchDiscount;
     });
@@ -65,10 +74,7 @@ export default function CouponDashboard() {
   ======================== */
   const totalPages = Math.ceil(filteredCoupons.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCoupons = filteredCoupons.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const paginatedCoupons = filteredCoupons.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -86,9 +92,7 @@ export default function CouponDashboard() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             {/* TABLE HEADER */}
             <div className="px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Coupon List
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-800">Coupon List</h3>
 
               <div className="flex items-center gap-3">
                 {/* SEARCH */}
@@ -132,98 +136,93 @@ export default function CouponDashboard() {
             </div>
 
             {/* TABLE */}
-          <div className="border-1 border-[#F0F0F0] rounded-[10px] m-[16px]">
-  <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead className="border-b border-gray-200 text-center">
-        <tr>
-          <th className="px-6 py-3">No.</th>
-          <th className="px-6 py-3">Coupon Name</th>
-          <th className="px-6 py-3">Max Uses Per User</th>
-          <th className="px-6 py-3">Max Total Users Use</th>
-          <th className="px-6 py-3">Discount Value</th>
-          <th className="px-6 py-3">Expire Date</th>
-        </tr>
-      </thead>
+            <div className="border-1 border-[#F0F0F0] rounded-[10px] m-[16px]">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b border-gray-200 text-center">
+                    <tr>
+                      <th className="px-6 py-3">No.</th>
+                      <th className="px-6 py-3">Coupon Name</th>
+                      <th className="px-6 py-3">Max Uses Per User</th>
+                      <th className="px-6 py-3">Max Total Users Use</th>
+                      <th className="px-6 py-3">Discount Value</th>
+                      <th className="px-6 py-3">Expire Date</th>
+                      <th className="px-6 py-3">Action</th>
+                    </tr>
+                  </thead>
 
-      <tbody className="divide-y divide-gray-200 text-center align-middle">
-        {loading ? (
-          <tr>
-            <td colSpan="6" className="py-6">
-              Loading...
-            </td>
-          </tr>
-        ) : paginatedCoupons.length === 0 ? (
-          <tr>
-            <td colSpan="6" className="py-6">
-              No data found
-            </td>
-          </tr>
-        ) : (
-          paginatedCoupons.map((coupon, index) => (
-            <tr key={coupon._id}>
-              <td className="px-6 py-4">
-                {startIndex + index + 1}
-              </td>
-              <td className="px-6 py-4">
-                {coupon.name}
-              </td>
-              <td className="px-6 py-4">
-                {coupon.maxUsesPerUser ?? "-"}
-              </td>
-              <td className="px-6 py-4">
-                {coupon.maxTotalUses ?? "-"}
-              </td>
-              <td className="px-6 py-4">
-                {coupon.discountValue}%
-              </td>
-              <td className="px-6 py-4">
-                {new Date(coupon.expiresAt).toLocaleDateString()}
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
+                  <tbody className="divide-y divide-gray-200 text-center align-middle">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="py-6">
+                          Loading...
+                        </td>
+                      </tr>
+                    ) : paginatedCoupons.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="py-6">
+                          No data found
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedCoupons.map((coupon, index) => (
+                        <tr key={coupon._id}>
+                          <td className="px-6 py-4">{startIndex + index + 1}</td>
+                          <td className="px-6 py-4">{coupon.name}</td>
+                          <td className="px-6 py-4">{coupon.maxUsesPerUser ?? "-"}</td>
+                          <td className="px-6 py-4">{coupon.maxTotalUses ?? "-"}</td>
+                          <td className="px-6 py-4">{coupon.discountValue}%</td>
+                          <td className="px-6 py-4">
+                            {new Date(coupon.expiresAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              onClick={() => handleDeleteCoupon(coupon._id)}
+                              className="flex items-center justify-center gap-1 text-red-600 font-semibold hover:underline"
+                            >
+                              <Trash2 size={16} /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-  {/* PAGINATION */}
-  <div className="px-6 py-4 flex items-center justify-between">
-    <p className="text-sm text-[#667085]">
-      <span className="text-[#101828] font-medium">
-        {startIndex + 1} –{" "}
-        {Math.min(
-          startIndex + itemsPerPage,
-          filteredCoupons.length
-        )}
-      </span>{" "}
-      of {filteredCoupons.length} Entries
-    </p>
+              {/* PAGINATION */}
+              <div className="px-6 py-4 flex items-center justify-between">
+                <p className="text-sm text-[#667085]">
+                  <span className="text-[#101828] font-medium">
+                    {startIndex + 1} –{" "}
+                    {Math.min(startIndex + itemsPerPage, filteredCoupons.length)}
+                  </span>{" "}
+                  of {filteredCoupons.length} Entries
+                </p>
 
-    <div className="flex items-center gap-3">
-      <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
-        1 - 4 <ChevronDown size={16} />
-      </button>
+                <div className="flex items-center gap-3">
+                  {/* <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
+                    1 - 4 <ChevronDown size={16} />
+                  </button> */}
 
-      <button
-        disabled={currentPage === 1}
-        onClick={() => setCurrentPage((p) => p - 1)}
-        className="p-2 border rounded-lg disabled:opacity-50"
-      >
-        <ChevronLeft size={18} />
-      </button>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="p-2 border rounded-lg disabled:opacity-50"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
 
-      <button
-        disabled={currentPage === totalPages}
-        onClick={() => setCurrentPage((p) => p + 1)}
-        className="flex items-center gap-2 px-4 py-2 border rounded-lg disabled:opacity-50"
-      >
-        Next <ChevronRight size={18} />
-      </button>
-    </div>
-  </div>
-</div>
-
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="flex items-center gap-2 px-4 py-2 border rounded-lg disabled:opacity-50"
+                  >
+                    Next <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

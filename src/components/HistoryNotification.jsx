@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, ChevronDown } from "lucide-react";
+import { Search } from "lucide-react";
 import Header from "./Header";
 
 const PAGE_SIZE = 10;
+const MAX_PAGE_BUTTONS = 5; // max page buttons visible
 
 export default function HistoryNotification() {
   const [data, setData] = useState([]);
@@ -15,14 +16,13 @@ export default function HistoryNotification() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ✅ FETCH DATA (FIXED)
+  // FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get(
           "http://192.168.1.18:5000/api/admin/notifications"
         );
-
         setData(res.data.notifications || []);
         setStats(res.data.counts || null);
       } catch (error) {
@@ -31,23 +31,19 @@ export default function HistoryNotification() {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
-  // 🔍 SEARCH + FILTER
+  // SEARCH + FILTER
   const filteredData = data.filter((item) => {
     const userName = (item.userId?.name || "").toLowerCase();
     const subscription = (item.userId?.subscription || "").toLowerCase();
-
     const matchSearch = userName.includes(search.toLowerCase());
-    const matchFilter =
-      filter === "All" || subscription === filter.toLowerCase();
-
+    const matchFilter = filter === "All" || subscription === filter.toLowerCase();
     return matchSearch && matchFilter;
   });
 
-  // ✅ PAGINATION
+  // PAGINATION
   const totalEntries = filteredData.length;
   const totalPages = Math.ceil(totalEntries / PAGE_SIZE);
 
@@ -56,28 +52,39 @@ export default function HistoryNotification() {
 
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
+  // GENERATE PAGE NUMBERS
+  const getPageNumbers = () => {
+    let start = Math.max(currentPage - Math.floor(MAX_PAGE_BUTTONS / 2), 1);
+    let end = Math.min(start + MAX_PAGE_BUTTONS - 1, totalPages);
+    if (end - start + 1 < MAX_PAGE_BUTTONS) {
+      start = Math.max(end - MAX_PAGE_BUTTONS + 1, 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
+
   return (
     <div className="flex-1 px-6 py-5 bg-[#F7F7F7]">
       <Header
         title="History Notification"
         subtitle="Manage and analyze your customer relationships"
       />
-        {/* STATS */}
-        {stats && (
-          <div className="grid grid-cols-3 gap-4 mb-6 mt-8 px-5">
-            <StatCard title="Total Customer" value={stats.total} />
-            <StatCard title="Free Customer" value={stats.free} />
-            <StatCard title="Paid Customer" value={stats.paid} />
-          </div>
-        )}
 
+      {/* STATS */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-4 mb-6 mt-8 px-5">
+          <StatCard title="Total Customer" value={stats.total} />
+          <StatCard title="Free Customer" value={stats.free} />
+          <StatCard title="Paid Customer" value={stats.paid} />
+        </div>
+      )}
+
+      {/* TABLE */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB]">
         {/* HEADER */}
         <div className="flex items-center justify-between px-5 py-4">
-          <h2 className="text-[16px] font-semibold text-[#141414]">
-            Customer List
-          </h2>
-
+          <h2 className="text-[16px] font-semibold text-[#141414]">Customer List</h2>
           <div className="flex gap-3">
             {/* SEARCH */}
             <div className="flex items-center gap-2 px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white">
@@ -93,7 +100,6 @@ export default function HistoryNotification() {
                 className="outline-none text-sm w-36"
               />
             </div>
-
             {/* FILTER */}
             <select
               value={filter}
@@ -110,9 +116,7 @@ export default function HistoryNotification() {
           </div>
         </div>
 
-      
-
-        {/* TABLE */}
+        {/* TABLE CONTENT */}
         <div className="m-2.5 border border-[#F0F0F0] rounded-xl px-4 py-3">
           <table className="w-full text-sm">
             <thead className="border-b border-[#F0F0F0]">
@@ -125,62 +129,40 @@ export default function HistoryNotification() {
                 <th className="px-5 py-3 text-left">Notification No.</th>
               </tr>
             </thead>
-
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="py-6 text-center">
-                    Loading...
-                  </td>
+                  <td colSpan="6" className="py-6 text-center">Loading...</td>
                 </tr>
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-6 text-center">
-                    No data found
-                  </td>
+                  <td colSpan="6" className="py-6 text-center">No data found</td>
                 </tr>
               ) : (
                 paginatedData.map((item) => (
                   <tr key={item._id}>
-                    <td className="px-5 py-4 border-b">
-                      {item._id}
-                    </td>
-
+                    <td className="px-5 py-4 border-b">{item._id}</td>
                     <td className="px-5 py-4 border-b">
                       <div className="flex items-center gap-2">
                         <img
-                          src={`https://ui-avatars.com/api/?name=${
-                            item.userId?.name || "User"
-                          }`}
+                          src={`https://ui-avatars.com/api/?name=${item.userId?.name || "User"}`}
                           className="w-6 h-6 rounded-full"
                         />
                         {item.userId?.name || "Unknown User"}
                       </div>
                     </td>
-
+                    <td className="px-5 py-4 border-b">{item.recipient}</td>
+                    <td className="px-5 py-4 border-b">{new Date(item.sentAt).toLocaleString()}</td>
                     <td className="px-5 py-4 border-b">
-                      {item.recipient}
-                    </td>
-
-                    <td className="px-5 py-4 border-b">
-                      {new Date(item.sentAt).toLocaleString()}
-                    </td>
-
-                    <td className="px-5 py-4 border-b">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs ${
-                          item.userId?.subscription?.toLowerCase() === "paid"
-                            ? "bg-[#ECFDF3] text-[#027A48]"
-                            : "bg-[#F2F4F7] text-[#344054]"
-                        }`}
-                      >
+                      <span className={`px-3 py-1 rounded-full text-xs ${
+                        item.userId?.subscription?.toLowerCase() === "paid"
+                          ? "bg-[#ECFDF3] text-[#027A48]"
+                          : "bg-[#F2F4F7] text-[#344054]"
+                      }`}>
                         {item.userId?.subscription || "Unknown"}
                       </span>
                     </td>
-
-                    <td className="px-5 py-4 border-b">
-                      {item.count ?? "-"}
-                    </td>
+                    <td className="px-5 py-4 border-b">{item.count ?? "-"}</td>
                   </tr>
                 ))
               )}
@@ -188,42 +170,44 @@ export default function HistoryNotification() {
           </table>
         </div>
 
-        {/* ✅ PAGINATION (EXACT DESIGN) */}
+        {/* PAGINATION */}
         <div className="flex items-center justify-between px-5 py-4">
           <span className="text-sm text-[#6B7280]">
             {totalEntries === 0
               ? "0 Entries"
-              : `${startIndex + 1} – ${Math.min(
-                  endIndex,
-                  totalEntries
-                )} of ${totalEntries} Entries`}
+              : `${startIndex + 1} – ${Math.min(endIndex, totalEntries)} of ${totalEntries} Entries`}
           </span>
 
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
-              1 – 10 <ChevronDown size={16} />
-            </button>
-
+          <div className="flex items-center gap-2">
+            {/* PREV BUTTON */}
             <button
               disabled={currentPage === 1}
-              onClick={() =>
-                setCurrentPage((p) => Math.max(p - 1, 1))
-              }
-              className="p-2 border rounded-lg disabled:opacity-40"
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              className="px-3 py-1 border rounded-lg disabled:opacity-40"
             >
-              ←
+              &lt;
             </button>
 
+            {/* PAGE NUMBERS */}
+            {getPageNumbers().map((num) => (
+              <button
+                key={num}
+                onClick={() => setCurrentPage(num)}
+                className={`px-3 py-1 border rounded-lg ${
+                  num === currentPage ? "bg-blue-500 text-white" : "bg-white text-black"
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+
+            {/* NEXT BUTTON */}
             <button
               disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.min(p + 1, totalPages)
-                )
-              }
-              className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              className="px-3 py-1 border rounded-lg disabled:opacity-40"
             >
-              Next →
+              &gt;
             </button>
           </div>
         </div>
@@ -232,16 +216,12 @@ export default function HistoryNotification() {
   );
 }
 
-/* STAT CARD */
+// STAT CARD
 function StatCard({ title, value }) {
   return (
     <div className="bg-white h-[100px] border border-[#E5E7EB] rounded-2xl p-5">
-      <p className="text-[#141414] text-[16px] font-medium">
-        {title}
-      </p>
-      <p className="text-[#141414] text-[32px] font-semibold">
-        + {value}
-      </p>
+      <p className="text-[#141414] text-[16px] font-medium">{title}</p>
+      <p className="text-[#141414] text-[32px] font-semibold">+ {value}</p>
     </div>
   );
 }

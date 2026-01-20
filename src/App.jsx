@@ -10,11 +10,13 @@ import CreateCouponModal from "./components/CreateCouponModal";
 import Login from '../src/pages/Login'; 
 import ProtectedRoute from './rooutes/ProtectedRoute';
 import { useState } from "react";
-import arrow from '../src/assets/arrow.png'
+import arrow from '../src/assets/arrow.png';
+import NotFound from "./components/NotFound";
+ // <-- New 404 component
 
 /* Dashboard Layout */
 function DashboardLayout() {
-   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="flex min-h-screen relative">
@@ -48,13 +50,16 @@ function DashboardLayout() {
           <Route path="/editplan" element={<EditPackageModal />} />
           <Route path="/coupon" element={<CouponDashboard />} />
           <Route path="/createcoupon" element={<CreateCouponModal />} />
+
+          {/* Catch-all for unknown dashboard routes */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </div>
   );
 }
 
-
+/* App Router */
 export default function App() {
   return (
     <BrowserRouter>
@@ -72,8 +77,8 @@ export default function App() {
           }
         />
 
-        {/* FALLBACK */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Fallback for completely unknown routes outside dashboard */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

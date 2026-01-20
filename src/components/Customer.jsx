@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Search, ChevronDown } from "lucide-react";
+import { Search } from "lucide-react";
 import Header from "./Header";
 
-/* Pagination constant */
+/* Pagination constants */
 const ITEMS_PER_PAGE = 10;
+const MAX_PAGE_BUTTONS = 5; // max numeric page buttons visible
 
 export default function Customer() {
   const [customers, setCustomers] = useState([]);
@@ -29,9 +30,7 @@ export default function Customer() {
 
   const getCustomers = async () => {
     try {
-      const res = await axios.get(
-        "http://192.168.1.18:5000/api/user"
-      );
+      const res = await axios.get("http://192.168.1.18:5000/api/user");
       setCustomers(res.data.users || []);
       setStats(res.data.counts || null);
     } catch (error) {
@@ -44,29 +43,30 @@ export default function Customer() {
 
   /* FILTER */
   const filteredCustomers = customers.filter((c) => {
-    const matchName = c.name
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
+    const matchName = c.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchSubscription =
-      subscriptionFilter === "all" ||
-      c.subscription === subscriptionFilter;
-
+      subscriptionFilter === "all" || c.subscription === subscriptionFilter;
     return matchName && matchSubscription;
   });
 
   /* PAGINATION */
-  const totalPages = Math.ceil(
-    filteredCustomers.length / ITEMS_PER_PAGE
-  );
-
+  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
 
-  const paginatedCustomers = filteredCustomers.slice(
-    startIndex,
-    endIndex
-  );
+  // Generate numeric page buttons
+  const getPageNumbers = () => {
+    let start = Math.max(currentPage - Math.floor(MAX_PAGE_BUTTONS / 2), 1);
+    let end = Math.min(start + MAX_PAGE_BUTTONS - 1, totalPages);
+    if (end - start + 1 < MAX_PAGE_BUTTONS) {
+      start = Math.max(end - MAX_PAGE_BUTTONS + 1, 1);
+    }
+    const pages = [];
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
+  const totalEntries = filteredCustomers.length;
 
   return (
     <main className="flex-1 p-6 bg-[#F8F8F8]">
@@ -104,9 +104,7 @@ export default function Customer() {
 
             <select
               value={subscriptionFilter}
-              onChange={(e) =>
-                setSubscriptionFilter(e.target.value)
-              }
+              onChange={(e) => setSubscriptionFilter(e.target.value)}
               className="px-3 py-2 border rounded-lg text-sm outline-none"
             >
               <option value="all">All</option>
@@ -125,9 +123,7 @@ export default function Customer() {
                 <th className="px-5 py-3 text-left">Customer Name</th>
                 <th className="px-5 py-3 text-left">Contact</th>
                 <th className="px-5 py-3 text-left">Subscription</th>
-                <th className="px-5 py-3 text-left">
-                  Subscription Day
-                </th>
+                <th className="px-5 py-3 text-left">Subscription Day</th>
               </tr>
             </thead>
 
@@ -155,8 +151,7 @@ export default function Customer() {
                       <div className="flex items-center gap-2">
                         <img
                           src={
-                            c.avatar ||
-                            `https://ui-avatars.com/api/?name=${c.name}`
+                            c.avatar || `https://ui-avatars.com/api/?name=${c.name}`
                           }
                           className="w-6 h-6 rounded-full"
                         />
@@ -175,9 +170,7 @@ export default function Customer() {
                         {c.subscription}
                       </span>
                     </td>
-                    <td className="px-5 py-4 border-b">
-                      {c.subscriptionDuration} Days
-                    </td>
+                    <td className="px-5 py-4 border-b">{c.subscriptionDuration} Days</td>
                   </tr>
                 ))
               )}
@@ -185,38 +178,44 @@ export default function Customer() {
           </table>
         </div>
 
-        {/* Pagination (Image Style) */}
-        <div className="flex justify-end px-5 py-4">
-          <div className="flex items-center gap-3 bg-white px-4 py-2">
-            {/* Range */}
-            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm">
-              {startIndex + 1} –{" "}
-              {Math.min(endIndex, filteredCustomers.length)}
-              <ChevronDown size={16} />
-            </button>
+        {/* PAGINATION */}
+        <div className="flex items-center justify-between px-5 py-4">
+          <span className="text-sm text-[#6B7280]">
+            {totalEntries === 0
+              ? "0 Entries"
+              : `${startIndex + 1} – ${Math.min(endIndex, filteredCustomers.length)} of ${filteredCustomers.length} Entries`}
+          </span>
 
-            {/* Prev */}
+          <div className="flex items-center gap-2">
+            {/* PREV */}
             <button
-              onClick={() =>
-                setCurrentPage((p) => Math.max(p - 1, 1))
-              }
               disabled={currentPage === 1}
-              className="p-2 border rounded-lg disabled:opacity-40"
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              className="px-3 py-1 border rounded-lg disabled:opacity-40"
             >
-              ←
+              &lt;
             </button>
 
-            {/* Next */}
+            {/* PAGE NUMBERS */}
+            {getPageNumbers().map((num) => (
+              <button
+                key={num}
+                onClick={() => setCurrentPage(num)}
+                className={`px-3 py-1 border rounded-lg ${
+                  num === currentPage ? "bg-blue-500 text-white" : "bg-white text-black"
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+
+            {/* NEXT */}
             <button
-              onClick={() =>
-                setCurrentPage((p) =>
-                  Math.min(p + 1, totalPages)
-                )
-              }
               disabled={currentPage === totalPages}
-              className="flex items-center gap-2 px-3 py-2 border rounded-lg disabled:opacity-40"
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              className="px-3 py-1 border rounded-lg disabled:opacity-40"
             >
-              Next →
+              &gt;
             </button>
           </div>
         </div>
@@ -229,12 +228,8 @@ export default function Customer() {
 function StatCard({ title, value }) {
   return (
     <div className="bg-white h-[100px] border border-[#E5E7EB] rounded-2xl p-5">
-      <p className="text-[#141414] text-[16px] font-medium">
-        {title}
-      </p>
-      <p className="text-[#141414] text-[32px] font-semibold">
-        + {value}
-      </p>
+      <p className="text-[#141414] text-[16px] font-medium">{title}</p>
+      <p className="text-[#141414] text-[32px] font-semibold">+ {value}</p>
     </div>
   );
 }

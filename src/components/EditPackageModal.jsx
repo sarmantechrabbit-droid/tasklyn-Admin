@@ -6,11 +6,9 @@ import axios from "axios";
 export default function EditPackageModal() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { id } = useParams(); // Optional: get _id from URL
+  const { id } = useParams();
   const [plan, setPlan] = useState(state?.plan || null);
   const [loadingPlan, setLoadingPlan] = useState(false);
-
-  // Features & form data
   const [features, setFeatures] = useState([]);
   const [formData, setFormData] = useState({
     packageName: "",
@@ -18,17 +16,15 @@ export default function EditPackageModal() {
     actualPrice: "",
     discountedPrice: "",
   });
+  const [errors, setErrors] = useState({});
 
-  // Redirect if no plan passed AND no id
   useEffect(() => {
     if (!plan && !id) navigate("/subscription");
   }, [plan, id, navigate]);
 
-  // Fetch plan from API if id provided
   useEffect(() => {
     const fetchPlan = async () => {
       if (!id || plan) return;
-
       try {
         setLoadingPlan(true);
         const res = await axios.get(`http://192.168.1.18:5000/api/package/${id}`);
@@ -44,7 +40,6 @@ export default function EditPackageModal() {
     fetchPlan();
   }, [id, plan, navigate]);
 
-  // Initialize form when plan is loaded
   useEffect(() => {
     if (!plan) return;
     setFormData({
@@ -56,53 +51,108 @@ export default function EditPackageModal() {
     setFeatures(plan.features?.length ? plan.features : [""]);
   }, [plan]);
 
-  const isProPlan = plan?.actualPrice > 0; // Use price instead of name
+  const isProPlan = plan?.actualPrice > 0;
 
-  const handleAddFeature = () => setFeatures([...features, ""]);
-  const handleRemoveFeature = (index) => setFeatures(features.filter((_, i) => i !== index));
+  const handleAddFeature = () => {
+    if (features[features.length - 1]?.trim() === "") {
+      alert("Please fill the previous feature before adding a new one!");
+      return;
+    }
+    setFeatures([...features, ""]);
+  };
+
+  const handleRemoveFeature = (index) => {
+    setFeatures(features.filter((_, i) => i !== index));
+  };
+
   const handleFeatureChange = (index, value) => {
     const updated = [...features];
     updated[index] = value;
     setFeatures(updated);
   };
+
   const handleInputChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // SAVE PACKAGE
+  // ✅ FORM VALIDATION
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Package Name
+    if (!formData.packageName.trim()) {
+      newErrors.packageName = "Package name is required";
+    } else if (!/^[A-Za-z ]+$/.test(formData.packageName)) {
+      newErrors.packageName = "Package name must contain only letters";
+    } else if (formData.packageName.length > 50) {
+      newErrors.packageName = "Package name must not exceed 50 characters";
+    }
+
+    // Short Description
+    if (!formData.shortDescription.trim()) {
+      newErrors.shortDescription = "Short description is required";
+    } else if (!/^[A-Za-z ]+$/.test(formData.shortDescription)) {
+      newErrors.shortDescription = "Short description must contain only letters";
+    } else if (formData.shortDescription.length > 50) {
+      newErrors.shortDescription = "Short description must not exceed 50 characters";
+    }
+
+    // Actual Price
+    if (isProPlan) {
+      if (!formData.actualPrice.toString().trim()) {
+        newErrors.actualPrice = "Actual price is required";
+      } else if (isNaN(formData.actualPrice) || Number(formData.actualPrice) <= 0) {
+        newErrors.actualPrice = "Must be a number greater than 0";
+      }
+
+      if (!formData.discountedPrice.toString().trim()) {
+        newErrors.discountedPrice = "Discounted price is required";
+      } else if (isNaN(formData.discountedPrice) || Number(formData.discountedPrice) <= 0) {
+        newErrors.discountedPrice = "Must be a number greater than 0";
+      }
+    }
+
+    // Features validation
+    const emptyFeatureIndex = features.findIndex((f) => f.trim() === "");
+    if (emptyFeatureIndex !== -1) {
+      newErrors.features = `Feature #${emptyFeatureIndex + 1} cannot be empty`;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
-    if (!plan) return;
+    if (!validateForm()) return;
 
     try {
       const payload = {
-        packageName: formData.packageName || "",
-        shortDescription: formData.shortDescription || "",
-        features: features.filter(Boolean),
+        packageName: formData.packageName,
+        shortDescription: formData.shortDescription,
+        features,
       };
 
       if (isProPlan) {
-        payload.actualPrice = Number(formData.actualPrice) || 0;
-        payload.discountedPrice = Number(formData.discountedPrice) || 0;
+        payload.actualPrice = Number(formData.actualPrice);
+        payload.discountedPrice = Number(formData.discountedPrice);
       }
 
-      console.log("PUT payload:", payload);
-
-      const response = await axios.put(
+      await axios.put(
         `http://192.168.1.18:5000/api/package/${plan._id}`,
         payload,
         { headers: { "Content-Type": "application/json" } }
       );
 
-      console.log("PUT response:", response.data);
+      alert("✅ Plan updated successfully");
       navigate("/subscription");
     } catch (error) {
       console.error("UPDATE ERROR:", error.response?.data || error.message);
-      alert("Failed to update package");
+      alert("❌ Failed to update package");
     }
   };
 
   const handleCancel = () => navigate("/subscription");
 
-  if (loadingPlan) return null; // Wait for plan if fetching
+  if (loadingPlan) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -114,48 +164,49 @@ export default function EditPackageModal() {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-8 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6 border-b pb-6">
           <h2 className="text-2xl font-bold">Edit Package</h2>
-          <button onClick={handleCancel}>
-            <X size={24} />
-          </button>
+          <button onClick={handleCancel}><X size={24} /></button>
         </div>
 
         <div className="space-y-5">
-          <input
+          <InputField
+            label="Package Name"
             name="packageName"
             value={formData.packageName}
             onChange={handleInputChange}
-            className="w-full px-4 py-2.5 border rounded-lg"
+            error={errors.packageName}
             placeholder="Package Name"
           />
 
-          <input
+          <InputField
+            label="Short Description"
             name="shortDescription"
             value={formData.shortDescription}
             onChange={handleInputChange}
-            className="w-full px-4 py-2.5 border rounded-lg"
+            error={errors.shortDescription}
             placeholder="Short Description"
           />
 
           {isProPlan && (
             <div className="grid grid-cols-2 gap-4">
-              <input
+              <InputField
+                label="Actual Price"
                 name="actualPrice"
                 value={formData.actualPrice}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2.5 border rounded-lg"
+                error={errors.actualPrice}
                 placeholder="Actual Price"
               />
-              <input
+              <InputField
+                label="Discounted Price"
                 name="discountedPrice"
                 value={formData.discountedPrice}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2.5 border rounded-lg"
+                error={errors.discountedPrice}
                 placeholder="Discounted Price"
               />
             </div>
           )}
 
-          {/* FEATURES */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">Features</label>
@@ -174,9 +225,11 @@ export default function EditPackageModal() {
                   type="text"
                   value={feature}
                   onChange={(e) => handleFeatureChange(index, e.target.value)}
-                  className="flex-1 px-4 py-2.5 border rounded-lg"
+                  className={`flex-1 px-4 py-2.5 border rounded-lg ${
+                    errors.features ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder={`Feature #${index + 1}`}
                 />
-
                 {features.length > 1 && (
                   <button
                     type="button"
@@ -188,6 +241,7 @@ export default function EditPackageModal() {
                 )}
               </div>
             ))}
+            {errors.features && <p className="text-red-500 text-xs mt-1">{errors.features}</p>}
           </div>
         </div>
 
@@ -206,6 +260,25 @@ export default function EditPackageModal() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Reusable InputField Component
+function InputField({ label, name, value, onChange, error, placeholder }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <input
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={`w-full px-4 py-2.5 border rounded-lg outline-none transition-all focus:ring-2 ${
+          error ? "border-red-500 focus:ring-red-300" : "border-gray-300 focus:ring-teal-500"
+        }`}
+      />
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   );
 }

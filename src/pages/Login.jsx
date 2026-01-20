@@ -6,6 +6,8 @@ import { loginUser } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -44,12 +46,12 @@ export default function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-between px-2 bg-cover bg-center"
-      style={{ backgroundImage: `url(${Bg})` }}
+    style={{ backgroundImage: `url(${Bg})` }}
     >
       {/* LEFT LOGIN CARD */}
       <div className="w-[704px] min-h-screen m-3 bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center">
         <div className="flex items-center absolute left-10 top-10 gap-2 mb-10">
-        <img src={Logos} className="w-[100px]"/>
+          <img src={Logos} className="w-[100px]" />
         </div>
 
         <form onSubmit={handleSubmit} className="w-[360px] py-16">
@@ -78,27 +80,26 @@ export default function Login() {
             onChange={handleChange}
             className="w-full mb-3 focus:outline-none border rounded-xl px-3 h-12"
           />
-
           {/* Password */}
           <label className="text-sm font-medium mb-1 block">Password</label>
-          <input
-            type="password"
-            name="password"
-            required
-            placeholder="Enter your password"
-            onChange={handleChange}
-            className="w-full mb-6 focus:outline-none border rounded-xl px-3 h-12"
-          />
 
-          {/* Remember */}
-          <div className="flex justify-between items-center mb-6 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" />
-              Remember me
-            </label>
-            <span className="text-emerald-600 cursor-pointer">
-              Forgot password?
-            </span>
+          <div className="relative mb-6">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              required
+              placeholder="Enter your password"
+              onChange={handleChange}
+              className="w-full focus:outline-none border rounded-xl px-3 h-12 pr-10"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
           </div>
 
           {/* Button */}
@@ -122,14 +123,14 @@ export default function Login() {
       </div>
 
       {/* RIGHT IMAGE */}
-      <div
-        className="hidden md:block min-h-screen bg-no-repeat bg-right bg-contain mt-4"
-    
-      />
-      <img  style={{
+      <div className="hidden md:block min-h-screen bg-no-repeat bg-right bg-contain mt-4" />
+      <img
+        style={{
           width: "600px",
-        
-        }} className="h-[100vh] mt-10" src={RightBg}/>
+        }}
+        className="h-[100vh] mt-10"
+        src={RightBg}
+      />
     </div>
   );
 }
