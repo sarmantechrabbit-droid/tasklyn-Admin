@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -13,7 +13,22 @@ export default function CreateCouponModal() {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [existingCoupons, setExistingCoupons] = useState([]);
   const navigate = useNavigate();
+
+  // Fetch existing coupons for duplicate validation
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      try {
+        const res = await axios.get("http://192.168.1.18:5000/api/coupons");
+        // Extract only the coupon names
+        setExistingCoupons(res.data.map(c => c.name));
+      } catch (err) {
+        console.error("Failed to fetch existing coupons", err);
+      }
+    };
+    fetchCoupons();
+  }, []);
 
   const handleInputChange = (e) => {
     setCouponForm({
@@ -21,6 +36,9 @@ export default function CreateCouponModal() {
       [e.target.name]: e.target.value,
     });
   };
+
+  // Helper to normalize coupon names for duplicate check
+  const normalizeName = (name) => name.replace(/\s+/g, "").toLowerCase();
 
   // ✅ FORM VALIDATION
   const validateForm = () => {
@@ -33,6 +51,15 @@ export default function CreateCouponModal() {
       newErrors.name = "Coupon name must contain only letters";
     } else if (couponForm.name.length > 50) {
       newErrors.name = "Coupon name must not exceed 50 characters";
+    } else {
+      // Duplicate check
+      const normalizedNewName = normalizeName(couponForm.name);
+      const isDuplicate = existingCoupons.some(
+        (existing) => normalizeName(existing) === normalizedNewName
+      );
+      if (isDuplicate) {
+        newErrors.name = "Coupon name already exists";
+      }
     }
 
     // Max Uses Per User
@@ -53,20 +80,19 @@ export default function CreateCouponModal() {
       newErrors.maxTotalUsers = "Must be greater than 0";
     }
 
-   // Discount Value
-if (!couponForm.discountValue.trim()) {
-  newErrors.discountValue = "Discount value is required";
-} else {
-  const discount = Number(couponForm.discountValue);
-  if (isNaN(discount)) {
-    newErrors.discountValue = "Must be a number";
-  } else if (discount <= 0) {
-    newErrors.discountValue = "Must be greater than 0";
-  } else if (discount > 99) {
-    newErrors.discountValue = "Must not exceed 99%";
-  }
-}
-
+    // Discount Value
+    if (!couponForm.discountValue.trim()) {
+      newErrors.discountValue = "Discount value is required";
+    } else {
+      const discount = Number(couponForm.discountValue);
+      if (isNaN(discount)) {
+        newErrors.discountValue = "Must be a number";
+      } else if (discount <= 0) {
+        newErrors.discountValue = "Must be greater than 0";
+      } else if (discount > 99) {
+        newErrors.discountValue = "Must not exceed 99%";
+      }
+    }
 
     // Expire Date
     if (!couponForm.expireDate.trim()) newErrors.expireDate = "Expire date is required";
@@ -96,6 +122,7 @@ if (!couponForm.discountValue.trim()) {
 
       alert("✅ Coupon created successfully");
 
+      // Clear form
       setCouponForm({
         name: "",
         discountValue: "",
@@ -104,6 +131,11 @@ if (!couponForm.discountValue.trim()) {
         expireDate: "",
       });
       setErrors({});
+
+      // Refresh existing coupons for live validation
+      const res = await axios.get("http://192.168.1.18:5000/api/coupons");
+      setExistingCoupons(res.data.map(c => c.name));
+
       navigate("/coupon");
     } catch (error) {
       console.error("Create Coupon Error:", error);
@@ -160,15 +192,14 @@ if (!couponForm.discountValue.trim()) {
             placeholder="Enter Max Total Users Use"
           />
 
-    <InputField
-  label="Discount Value"
-  name="discountValue"
-  value={couponForm.discountValue}
-  onChange={handleInputChange}
-  error={errors.discountValue}
-  placeholder="Enter Discount Value (0-99)"
-/>
-
+          <InputField
+            label="Discount Value"
+            name="discountValue"
+            value={couponForm.discountValue}
+            onChange={handleInputChange}
+            error={errors.discountValue}
+            placeholder="Enter Discount Value (0-99)"
+          />
 
           <InputField
             label="Expire Date"
