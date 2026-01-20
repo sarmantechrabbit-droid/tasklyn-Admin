@@ -152,7 +152,7 @@ export default function HistoryNotification() {
                       </div>
                     </td>
                     <td className="px-5 py-4 border-b">{item.recipient}</td>
-                    <td className="px-5 py-4 border-b">{new Date(item.sentAt).toLocaleString()}</td>
+                    <td className="px-5 py-4 border-b">{new Date(item.createdAt).toLocaleString()}</td>
                     <td className="px-5 py-4 border-b">
                       <span className={`px-3 py-1 rounded-full text-xs ${
                         item.userId?.subscription?.toLowerCase() === "paid"
